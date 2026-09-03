@@ -1,11 +1,13 @@
 Three ways to find "customers who never ordered" — and only two of them are safe 🚨
 
-Another classic SQL pattern (LeetCode #183): find rows in one table with no matching row in another. It sounds trivial, but the most common way people write it has a hidden landmine that only goes off when your data has NULLs.
+Another classic SQL pattern: find rows in one table with no matching row in another. It sounds trivial, but the most common way people write it has a hidden landmine that only goes off when your data has NULLs.
 
 𝟭. The NOT IN Subquery Method
 Select customers whose id isn't in the set of customerIds from Orders.
 ✅ Pros: The most concise, most "obvious" way to write it — reads almost like English.
-⚠️ Cons: Not NULL-safe. If the subquery (SELECT customerId FROM Orders) ever returns even one NULL, the NOT IN comparison becomes UNKNOWN for every single row, and the query silently returns zero rows — no error, just a wrong empty result. It works perfectly on clean data and then quietly breaks the day someone inserts an order with a NULL customerId.
+⚠️ Cons: Not NULL-safe. If the subquery (SELECT customerId FROM Orders) ever returns even one NULL, the NOT IN comparison becomes UNKNOWN for every single row, and the query silently returns zero rows — no error, just a wrong empty result. It works perfectly on clean data and then quietly breaks the day someone inserts an order with a NULL customerId. 
+
+Note: even if customerId is defined as a foreign key, that is not enough. That constraint only enforces referential integrity for non-NULL values: 'if customerId is set, then it must point to an existing primary key id Customers.' This is why the query as written may be a ticking timebomb. If you create the Orders table and specify that customerId is also NOT NULL, then the threat is neutralized.
 
 𝟮. The LEFT JOIN + IS NULL Method (Anti-Join)
 Join Customers to Orders, then keep only the rows where the join found nothing.
@@ -19,6 +21,6 @@ For each customer, check whether a correlated subquery finds any matching order.
 
 💡 The takeaway: NOT IN is the pattern most people reach for first, but it's the one to be most careful with. Whenever the "excluded" column could ever contain a NULL, prefer LEFT JOIN + IS NULL or NOT EXISTS — they express the same "no matching row" logic without the silent-failure risk.
 
-Which of these do you default to, and has NOT IN ever bitten you in production?
+Which of these do you default to? Has a NOT IN 'bomb' ever detonated on you in production?
 
-#SQL #DataEngineering #LeetCode #TechInterview #Postgres #MySQL #DataAnalytics #BackendDevelopment #DatabaseDesign #QueryOptimization
+#LearningInPublic #SQL #DataEngineering #LeetCode #TechInterview #Postgres #MySQL #DataAnalytics #BackendDevelopment #DatabaseDesign #QueryOptimization
