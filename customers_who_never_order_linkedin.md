@@ -1,26 +1,19 @@
-Three ways to find "customers who never ordered" — and only two of them are safe 🚨
+Your "NOT IN" query has a hidden timebomb 💣 (and it's not just about NULLs)
 
-Another classic SQL pattern: find rows in one table with no matching row in another. It sounds trivial, but the most common way people write it has a hidden landmine that only goes off when your data has NULLs.
+Classic SQL pattern (LeetCode #183): find customers with no matching order. The "obvious" way to write it — NOT IN — has TWO separate ways to fail, and I only realized the second one after reading a great Crunchy Data writeup on anti-joins.
 
 𝟭. The NOT IN Subquery Method
-Select customers whose id isn't in the set of customerIds from Orders.
-✅ Pros: The most concise, most "obvious" way to write it — reads almost like English.
-⚠️ Cons: Not NULL-safe. If the subquery (SELECT customerId FROM Orders) ever returns even one NULL, the NOT IN comparison becomes UNKNOWN for every single row, and the query silently returns zero rows — no error, just a wrong empty result. It works perfectly on clean data and then quietly breaks the day someone inserts an order with a NULL customerId. 
+SELECT customers whose id isn't in the set of customerIds from Orders.
+⚠️ Failure #1 — correctness: NOT IN is not NULL-safe. If Orders.customerId ever contains a single NULL, the comparison becomes UNKNOWN for every row, and the query silently returns zero rows. No error. Just a wrong, empty answer. And a foreign key alone does NOT guarantee non-nullability — you need an explicit NOT NULL constraint on top of it, or this can happen in production.
+⚠️ Failure #2 — performance: even when it's correct, it can be catastrophic on large tables. Crunchy Data benchmarked this on two 1M-row tables and the query never finished. Why? The planner materializes the ENTIRE subquery result into memory and rescans it once per row of the outer table — effectively a nested loop over a million-row set, repeated a million times.
 
-Note: even if customerId is defined as a foreign key, that is not enough. That constraint only enforces referential integrity for non-NULL values: 'if customerId is set, then it must point to an existing primary key id Customers.' This is why the query as written may be a ticking timebomb. If you create the Orders table and specify that customerId is also NOT NULL, then the threat is neutralized.
+𝟮. The EXCEPT Set-Based Method
+Use SQL's set-operator EXCEPT to express "everything in Customers except everything referenced in Orders."
+✅ NULL-safe, and in the same benchmark it ran in ~2.3 seconds — light-years better than NOT IN, and correct regardless of nullability.
+⚠️ Still not the fastest option: the plan appends both inputs, sorts them for duplicates, then filters — a real "big hammer" that touches and sorts the full combined dataset rather than probing a single hash lookup.
 
-𝟮. The LEFT JOIN + IS NULL Method (Anti-Join)
-Join Customers to Orders, then keep only the rows where the join found nothing.
-✅ Pros: NULL-safe by construction — unmatched rows simply get NULL on the Orders side, and checking a non-nullable primary key (o.id IS NULL) is a reliable way to detect "no match." Query planners are very good at optimizing this into an efficient anti-join.
-⚠️ Cons: Slightly more verbose than option 1, and the intent ("find missing matches") is implicit in the WHERE clause rather than stated directly.
+💡 The takeaway: if you've ever reached for NOT IN as a quick "find missing rows" pattern, it's worth a second look — not just for the NULL edge case, but because the query plan itself can be the difference between milliseconds and minutes at scale. EXCEPT is a safer fallback, but as I'll cover in a follow-up post, there's an even faster pattern still.
 
-𝟯. The NOT EXISTS Method
-For each customer, check whether a correlated subquery finds any matching order.
-✅ Pros: NULL-safe, same as the LEFT JOIN approach — NOT EXISTS only cares about row existence, so NULLs in the foreign key column can never poison it. Arguably the most explicit and self-documenting of the three: it reads exactly as "a customer for which no order exists." Most engines optimize this into an efficient semi-join/anti-join plan, often on par with or faster than the LEFT JOIN version, especially with an index on the joined column.
-⚠️ Cons: Slightly less common in everyday reporting SQL than a LEFT JOIN, so it can look a touch less familiar at first glance — though any experienced SQL reader will recognize it instantly.
+Have you ever had a NOT IN query quietly return the wrong (empty) result, or blow past its expected runtime?
 
-💡 The takeaway: NOT IN is the pattern most people reach for first, but it's the one to be most careful with. Whenever the "excluded" column could ever contain a NULL, prefer LEFT JOIN + IS NULL or NOT EXISTS — they express the same "no matching row" logic without the silent-failure risk.
-
-Which of these do you default to? Has a NOT IN 'bomb' ever detonated on you in production?
-
-#LearningInPublic #SQL #DataEngineering #LeetCode #TechInterview #Postgres #MySQL #DataAnalytics #BackendDevelopment #DatabaseDesign #QueryOptimization
+#SQL #DataEngineering #LeetCode #TechInterview #Postgres #MySQL #DataAnalytics #QueryOptimization #DatabaseDesign #BackendDevelopment

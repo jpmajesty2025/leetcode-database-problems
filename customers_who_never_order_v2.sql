@@ -33,7 +33,9 @@ Return the result table in any order.
 -- NULL-safe by construction: unmatched Customers rows get NULL for all Orders columns,
 -- so filtering on o.id IS NULL (a non-nullable primary key) reliably finds customers with
 -- no matching order, regardless of NULLs in Orders.customerId. Most query planners optimize
--- this into an efficient anti-join execution plan.
+-- this into an efficient anti-join execution plan (e.g. Postgres executes this as a Hash Anti
+-- Join), making it one of the fastest of the four approaches on large tables.
+-- Source: https://www.crunchydata.com/blog/rise-of-the-anti-join
 select c.name as Customers
 from Customers c
 left join Orders o

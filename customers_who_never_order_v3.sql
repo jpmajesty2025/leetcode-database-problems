@@ -34,7 +34,9 @@ Return the result table in any order.
 -- subquery per-row and only cares about whether a matching row exists, so NULLs in
 -- Orders.customerId can never poison the result (unlike NOT IN). Reads very explicitly
 -- as "customer for which no order exists," and most engines optimize it into an
--- efficient anti-join/semi-join plan, often on par with or better than LEFT JOIN + IS NULL.
+-- efficient anti-join/semi-join plan (e.g. Postgres Hash Anti Join), tying LEFT JOIN + IS NULL
+-- as the fastest of the four approaches on large tables.
+-- Source: https://www.crunchydata.com/blog/rise-of-the-anti-join
 SELECT name AS Customers
 FROM Customers c
 WHERE NOT EXISTS (

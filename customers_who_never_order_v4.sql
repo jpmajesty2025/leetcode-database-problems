@@ -29,17 +29,21 @@ Write a solution to find all customers who never order anything.
 Return the result table in any order.
 */
 
-
--- The NOT IN Subquery Method
--- Simple and readable, but NOT NULL-SAFE: if Orders.customerId ever contains a NULL value,
--- the subquery result set includes NULL, which poisons the NOT IN comparison (makes it UNKNOWN
--- for every row) and silently returns zero rows instead of the correct customer list.
--- Safe here only because customerId is a non-nullable foreign key per the stated schema.
--- ALSO the worst performer of the four approaches: the query planner materializes the entire
--- Orders subquery result into memory and rescans it once per row of Customers (nested-loop
--- style), rather than building a hash/anti-join plan. On large tables (e.g. 1M+ rows on each
--- side) this can be dramatically slower than EXCEPT, LEFT JOIN, or NOT EXISTS.
+-- The EXCEPT Set-Based Method
+-- NULL-safe: EXCEPT (like all set operators) treats NULL as comparable to itself for the
+-- purposes of duplicate elimination, so a NULL customerId row simply won't match any
+-- Customers.id and won't poison the result the way NOT IN does.
+-- Performance: a solid middle ground. Requires both sides to have identical column
+-- shape (here just id/name vs id), so we select just the id first and join back to get the
+-- name. Its plan appends both inputs, sorts for duplicates, then keeps non-matches -- correct
+-- and much faster than NOT IN's per-row rescan, but still slower than the LEFT JOIN/NOT EXISTS
+-- anti-join plans (roughly 3x slower in benchmarks on large tables), since it must sort/hash
+-- the full combined set rather than probing a single hash table.
 -- Source: https://www.crunchydata.com/blog/rise-of-the-anti-join
 SELECT name AS Customers
 FROM Customers
-WHERE id NOT IN (SELECT customerId FROM Orders);
+WHERE id IN (
+    SELECT id FROM Customers
+    EXCEPT
+    SELECT customerId FROM Orders
+);
