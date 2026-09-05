@@ -25,9 +25,9 @@ Iterate over the original `Friendship` table pairs `(user1, user2)`. Join `AllFr
 𝟯. Aggregate & Filter
 `COUNT(mutual_friend)` grouped by the original pair, filtering with `HAVING COUNT(...) >= 3`.
 
-💡 The takeaway:
-When querying undirected graphs in relational SQL, **never write complex OR joins across symmetric columns**. Always normalize the graph into bidirectional edges in a CTE or staging table first. You turn complex combinatorial joins into clean, indexable equi-joins ($O(N)$ hash/merge joins).
+💡 So what did we learn?
+When querying undirected graphs in relational SQL, **never write complex OR joins across symmetric columns**. Instead,  normalize the graph into bidirectional edges in a CTE or staging table first. You turn complex combinatorial joins into clean, indexable equi-joins ($O(N)$ hash/merge joins).
 
 How do you typically model and query undirected graph networks in your data warehouse?
 
-#SQL #DataEngineering #GraphAlgorithms #SocialNetwork #DatabaseDesign #QueryOptimization #PostgreSQL #DataAnalytics #LeetCode #TechInterview
+#LearningInPublic #SQL #DataEngineering #GraphAlgorithms #SocialNetwork #DatabaseDesign #QueryOptimization #PostgreSQL #DataAnalytics #LeetCode #TechInterview
