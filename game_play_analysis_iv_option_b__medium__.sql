@@ -57,9 +57,9 @@ WITH ActivityWithFirstLogin AS (
 SELECT 
     ROUND(
         COUNT(DISTINCT CASE 
-            WHEN event_date = DATE_ADD(first_login_date, INTERVAL 1 DAY) 
+            WHEN event_date = first_login_date + INTERVAL '1 day' 
             THEN player_id 
-        END) / COUNT(DISTINCT player_id),
+        END)::NUMERIC / COUNT(DISTINCT player_id),
         2
     ) AS fraction
 FROM 
