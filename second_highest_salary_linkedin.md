@@ -1,6 +1,17 @@
 Three ways to find the "second highest salary" in SQL — and why most of them silently break on edge cases 🔍
 
-This is a classic SQL interview question, but there is some subtlety here. What happens when the "obvious" answer meets an edge case: a table with only one distinct salary, or an empty table. The spec says: return NULL when there's no second highest salary. Here's how three common approaches hold up.
+Given:
+Employee
++-------------+---------+
+| Column Name | Type    |
++-------------+---------+
+| id          | int     |
+| salary      | int     |
++-------------+---------+
+
+Write a query to find the second highest salary of all employees. If there is no second highest salary, return null.
+
+Classic SQL interview question, but there is some subtlety here. What happens when the "obvious" answer meets an edge case: a table with only one distinct salary, or an empty table. The spec says: return NULL when there's no second highest salary. Here's how three common approaches hold up.
 
 𝟭. The Subquery Method
 Filter for the max salary below the overall max, then take MAX() of what's left.

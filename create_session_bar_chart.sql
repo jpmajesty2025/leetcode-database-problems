@@ -11,7 +11,8 @@ session_id is the column of unique values for this table.
 duration is the time in seconds that a user has visited the application.
  
 
-You want to know how long a user visits your application. You decided to create bins of "[0-5>", "[5-10>", "[10-15>", and "15 minutes or more" and count the number of sessions on it.
+You want to know how long a user visits your application. You decided to create bins 
+of "[0-5>", "[5-10>", "[10-15>", and "15 minutes or more" and count the number of sessions on it.
 
 Write a solution to report the (bin, total).
 
